@@ -1,0 +1,74 @@
+# -------------------------------------------------------------------
+# UPF: Low-Power ML Accelerator — Power Domains
+# -------------------------------------------------------------------
+
+set_design_top systolic_array
+
+# ---------------------------------------------------------------
+# Power domains
+# ---------------------------------------------------------------
+
+# PD_COMPUTE : the systolic array core (PE grid)
+create_power_domain PD_COMPUTE \
+  -elements {.pe_inst} \
+  -supply {primary VDD_COMPUTE}
+
+# PD_MEMORY  : SRAM ping-pong buffers
+create_power_domain PD_MEMORY \
+  -elements {.memory_interface_inst} \
+  -supply {primary VDD_MEM}
+
+# PD_CTRL    : control / sequencer logic
+create_power_domain PD_CTRL \
+  -elements {.} \
+  -supply {primary VDD_CTRL}
+
+# ---------------------------------------------------------------
+# Supply nets / ports
+# ---------------------------------------------------------------
+create_supply_port VDD_COMPUTE
+create_supply_port VDD_MEM
+create_supply_port VDD_CTRL
+create_supply_port VSS
+
+create_supply_net VDD_COMPUTE_NET  -domain PD_COMPUTE
+create_supply_net VDD_MEM_NET      -domain PD_MEMORY
+create_supply_net VDD_CTRL_NET     -domain PD_CTRL
+create_supply_net VSS_NET
+
+connect_supply_net  VDD_COMPUTE_NET  -ports VDD_COMPUTE
+connect_supply_net  VDD_MEM_NET      -ports VDD_MEM
+connect_supply_net  VDD_CTRL_NET     -ports VDD_CTRL
+connect_supply_net  VSS_NET          -ports VSS
+
+# ---------------------------------------------------------------
+# Level shifter between compute (lower V) and memory (higher V)
+# ---------------------------------------------------------------
+set_level_shifter LS_COMPUTE2MEM \
+  -domain PD_COMPUTE \
+  -source PD_COMPUTE \
+  -sink   PD_MEMORY \
+  -applies_to inputs \
+  -rule low_to_high \
+  -threshold 0.60
+
+# ---------------------------------------------------------------
+# Retention registers for PE accumulators
+# ---------------------------------------------------------------
+set_retention RET_PE_ACCUM \
+  -domain PD_COMPUTE \
+  -elements {pe_inst.accum_reg} \
+  -retention_power_net VDD_CTRL_NET \
+  -save_signal {ret_n} \
+  -restore_signal {ret_n}
+
+# ---------------------------------------------------------------
+# Power switches for compute domain
+# ---------------------------------------------------------------
+create_power_switch SW_COMPUTE \
+  -domain PD_COMPUTE \
+  -input_supply_port {in VDD_CTRL_NET} \
+  -output_supply_port {out VDD_COMPUTE_NET} \
+  -control_port {sleep sleep_n} \
+  -on_state {on_state {sleep_n} {in out}} \
+  -ack_port {ack ack_o}
