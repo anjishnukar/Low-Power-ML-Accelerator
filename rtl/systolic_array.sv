@@ -4,7 +4,8 @@ import params_pkg::*;
 module systolic_array #(
   parameter int N   = ARRAY_SIZE,
   parameter int DW  = DATA_WIDTH,
-  parameter int AW  = ACCUM_WIDTH
+  parameter int AW  = ACCUM_WIDTH,
+  parameter bit USE_FP16 = 0
 ) (
   input  logic            clk,
   input  logic            rst_n,
@@ -54,7 +55,7 @@ module systolic_array #(
     for (r = 0; r < N; r++) begin : row
       for (c = 0; c < N; c++) begin : col
 
-        // Clock gating: each PE checks its own neighbours' input
+        // Clock gating: each PE checks its neighbours' input
         assign clk_en_mat[r][c] = !zero_skip_en ||
           !((weight_stream[c] == '0) && (act_stream[c] == '0));
 
@@ -70,7 +71,8 @@ module systolic_array #(
 
         pe #(
           .DW(DW),
-          .AW(AW)
+          .AW(AW),
+          .USE_FP16(USE_FP16)
         ) pe_inst (
           .clk          (clk),
           .rst_n        (rst_n),

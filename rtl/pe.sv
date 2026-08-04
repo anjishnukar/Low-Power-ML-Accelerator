@@ -3,7 +3,8 @@ import params_pkg::*;
 
 module pe #(
   parameter int DW = DATA_WIDTH,
-  parameter int AW = ACCUM_WIDTH
+  parameter int AW = ACCUM_WIDTH,
+  parameter bit USE_FP16 = 0
 ) (
   input  logic        clk,
   input  logic        rst_n,
@@ -87,12 +88,28 @@ module pe #(
   logic zero_skip;
   assign zero_skip = (weight_reg == '0) || (act_reg == '0);
 
-  // Stage 1: Multiplier
+  // Stage 1: Multiplier (INT8 or FP16)
+  logic [AW-1:0] fp16_product;
+
+  generate
+    if (USE_FP16 && DW == 16) begin : gen_fp16_mult
+      fp16_mult fp16_mult_i (
+        .a(weight_reg),
+        .b(act_reg),
+        .result(fp16_product)
+      );
+    end
+  endgenerate
+
   always_ff @(posedge gclk or negedge rst_n) begin
     if (!rst_n) begin
       mult_result <= '0;
     end else if (!zero_skip) begin
-      mult_result <= $signed(weight_reg) * $signed(act_reg);
+      if (USE_FP16 && DW == 16) begin
+        mult_result <= fp16_product;
+      end else begin
+        mult_result <= $signed(weight_reg) * $signed(act_reg);
+      end
     end else begin
       mult_result <= '0;
     end
@@ -114,13 +131,11 @@ module pe #(
       psum_valid <= 1'b0;
     end else begin
       accum_reg  <= add_result;
-      psum_valid <= act_valid;  // valid one cycle after input
+      psum_valid <= act_valid;
     end
   end
 
-  // -------------------------------------------------------------------
   // Activation function block
-  // -------------------------------------------------------------------
   logic [AW-1:0] activated;
   activation #(
     .DW(AW)

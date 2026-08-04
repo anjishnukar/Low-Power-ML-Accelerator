@@ -1,1 +1,11 @@
 __pycache__/
+build/
+work/
+*.wlf
+transcript
+modelsim.ini
+*.log
+*.jou
+*.str
+*.bit
+*.dcp
