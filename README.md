@@ -6,6 +6,7 @@ A **parameterizable** N×N systolic array matrix multiplication unit written in 
 
 ## Table of Contents
 
+0. [Visual Overview (`index.html`)](#visual-overview-indexhtml)
 1. [What is a Systolic Array?](#what-is-a-systolic-array)
 2. [Architecture Overview](#architecture-overview)
 3. [Project Structure](#project-structure)
@@ -30,6 +31,34 @@ A **parameterizable** N×N systolic array matrix multiplication unit written in 
 8. [Verification Strategy](#verification-strategy)
 9. [Understanding the Output](#understanding-the-output)
 10. [Extending the Design](#extending-the-design)
+
+---
+
+## 📊 Visual Overview — `index.html`
+
+An interactive, self-contained web page that visualises the whole project lives at the repository root: **`index.html`**.
+
+Open it directly in a browser — no web server, no build step, no dependencies required.
+
+### What's on the page
+
+- **Hero section** — badges and key design constants (4×4 array scalable to 8×8, INT8/FP16 datapath, 32-bit accumulator, 3-stage MAC, latch-based clock gate, ReLU/Tanh activations).
+- **Systolic array concept** — the dataflow story: activations stream in, multiply-accumulate happens, partial sums accumulate, activated result streams out.
+- **Architecture diagram** — Host/DMA → Ping-Pong SRAM Bank A/B → Systolic Array N×N → Activation (ReLU/Tanh) → Output.
+- **Interactive array visualizer** — a live JavaScript re-implementation of the systolic array timing:
+  - Switch the array size between **4×4** and **8×8**.
+  - Choose the activation function (ReLU / Tanh / Linear).
+  - Toggle the **zero-skip clock gate** ON or OFF.
+  - Use **Play / Pause / Step / Reset** to watch a matrix multiply unfold.
+  - Watch multiply-accumulate cycles: tokens `A[k]` hit the PE column, products accumulate into the partial sum, and results `Y = act(W × A)` are produced.
+
+### Opening the page
+
+```bash
+open index.html        # macOS
+xdg-open index.html   # Linux
+start index.html      # Windows
+```
 
 ---
 
@@ -116,6 +145,7 @@ Each **PE** contains:
 ```
 low-power-ml-accelerator/
 │
+├── index.html                    # Interactive HTML visual overview (this page)
 ├── rtl/                          # RTL source files (SystemVerilog)
 │   ├── params_pkg.sv             # Global parameters package
 │   ├── clock_gate.sv             # Latch-based clock gating cell

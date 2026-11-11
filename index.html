@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Low-Power ML Accelerator — Systolic Array for Edge AI</title>
+<style>
+  :root {
+    --bg: #070b14;
+    --bg2: #0b1120;
+    --panel: #0e1628;
+    --panel2: #111c33;
+    --border: #1e2a45;
+    --text: #e2e8f0;
+    --muted: #8ea0bf;
+    --accent: #22d3ee;
+    --accent2: #a78bfa;
+    --green: #34d399;
+    --amber: #fbbf24;
+    --red: #f87171;
+    --pe-bg: #132238;
+    --pe-border: #2b3f63;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    background-image: radial-gradient(1200px 600px at 80% -10%, rgba(34,211,238,0.07), transparent 60%),
+                      radial-gradient(1000px 700px at -10% 20%, rgba(167,139,250,0.06), transparent 60%);
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+  nav {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(7,11,20,0.85); backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+  }
+  nav .wrap { display: flex; align-items: center; gap: 18px; height: 56px; flex-wrap: wrap; padding-top: 0; padding-bottom: 0; }
+  nav .brand { font-weight: 700; color: var(--text); text-decoration: none; font-size: 15px; }
+  nav .brand span { color: var(--accent); }
+  nav a { color: var(--muted); text-decoration: none; font-size: 13.5px; }
+  nav a:hover { color: var(--accent); }
+  nav .spacer { flex: 1; }
+  @media (max-width: 900px) { nav .navlink { display: none; } }
+
+  header.hero { padding: 72px 0 48px; text-align: center; }
+  .badges { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 18px; }
+  .badge {
+    font-size: 12px; padding: 4px 12px; border-radius: 999px;
+    border: 1px solid var(--border); color: var(--muted); background: var(--panel);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  .badge i { font-style: normal; color: var(--accent); }
+  h1 { font-size: clamp(34px, 6vw, 56px); letter-spacing: -1.5px; }
+  h1 .grad { background: linear-gradient(90deg, var(--accent), var(--accent2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .sub { color: var(--muted); max-width: 760px; margin: 16px auto 0; font-size: 17px; }
+  .cta { margin-top: 26px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .btn { display: inline-block; padding: 10px 22px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 14px; border: 1px solid var(--border); }
+  .btn.primary { background: linear-gradient(90deg, rgba(34,211,238,0.18), rgba(167,139,250,0.18)); color: var(--text); border-color: rgba(34,211,238,0.4); }
+  .btn.ghost { background: var(--panel); color: var(--muted); }
+  .stats { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 34px; }
+  .stat { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 10px 16px; font-size: 13px; color: var(--muted); }
+  .stat b { display: block; font-size: 18px; color: var(--text); font-family: ui-monospace, monospace; }
+
+  main { padding-bottom: 70px; }
+  section { padding: 56px 0 8px; scroll-margin-top: 70px; }
+  .kicker { color: var(--accent); font-family: ui-monospace, monospace; font-size: 12.5px; text-transform: uppercase; letter-spacing: 2px; }
+  h2 { font-size: clamp(26px, 4vw, 36px); letter-spacing: -0.8px; margin: 6px 0 14px; }
+  h3 { font-size: 20px; margin: 26px 0 10px; }
+  .lead { color: var(--muted); max-width: 840px; font-size: 16px; }
+  p { margin-bottom: 12px; color: #c3cede; }
+  a { color: var(--accent); }
+  code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; }
+  pre { padding: 14px 16px; overflow-x: auto; font-size: 13px; line-height: 1.5; margin: 12px 0; }
+  pre code { background: none; border: none; padding: 0; }
+  code { padding: 2px 6px; font-size: 0.9em; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; align-items: start; }
+  @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 22px; }
+  .panel h3 { margin-top: 0; }
+  .muted { color: var(--muted); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.6px; }
+  tr:last-child td { border-bottom: none; }
+
+  .arch { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 18px; overflow-x: auto; }
+  svg { width: 100%; min-width: 640px; display: block; }
+
+  /* interactive array */
+  .array-stage { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 20px; }
+  .array-toolbar { display: flex; gap: 18px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 14px; }
+  .ctl-group label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 6px; }
+  .btns { display: flex; gap: 6px; flex-wrap: wrap; }
+  button { background: var(--bg2); color: var(--text); border: 1px solid var(--border); padding: 7px 14px; border-radius: 8px; font-size: 13px; cursor: pointer; font-family: inherit; }
+  button:hover { border-color: var(--accent); color: var(--accent); }
+  button.active { background: rgba(34,211,238,0.15); border-color: var(--accent); color: var(--accent); }
+  button.big { padding: 10px 20px; font-size: 14px; background: var(--panel2); }
+  .array-meta { display: flex; gap: 26px; flex-wrap: wrap; font-family: ui-monospace, monospace; font-size: 13px; color: var(--muted); margin-bottom: 14px; }
+  .array-meta b { color: var(--accent); }
+  .array-wrap { display: flex; justify-content: center; overflow-x: auto; padding: 10px 0; }
+  #grid { display: grid; gap: 8px; justify-content: center; }
+  .pe { width: 76px; min-height: 76px; border-radius: 12px; background: var(--pe-bg); border: 1px solid var(--pe-border); padding: 8px; text-align: center; position: relative; transition: all 0.25s ease; }
+  .pe .w-val { font-family: ui-monospace, monospace; font-size: 16px; font-weight: 700; color: var(--text); }
+  .pe .tok-val { font-family: ui-monospace, monospace; font-size: 19px; font-weight: 800; color: #062a33; background: var(--accent); border-radius: 8px; padding: 3px 6px; display: inline-block; }
+  .pe .tok-label { font-size: 10px; color: var(--accent); font-family: ui-monospace, monospace; }
+  .pe .prod { font-size: 11px; color: var(--muted); font-family: ui-monospace, monospace; }
+  .pe.hit { border-color: var(--green); box-shadow: 0 0 0 2px rgba(52,211,153,0.35), 0 0 18px rgba(52,211,153,0.25); transform: translateY(-2px); }
+  .pe.gated { border-style: dashed; border-color: var(--amber); opacity: 0.75; }
+  .pe.gated .w-val { color: var(--amber); }
+  .pe .gate-tag { font-size: 10px; color: var(--amber); font-family: ui-monospace, monospace; }
+  #grid.n4 { grid-template-columns: repeat(4, 76px); }
+  #grid.n8 { grid-template-columns: repeat(8, 76px); }
+  .array-side { border-top: 1px dashed var(--border); padding-top: 14px; margin-top: 6px; }
+  .array-side table { margin-top: 8px; }
+  .arr-out { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .arr-out .out-chip { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; font-family: ui-monospace, monospace; font-size: 13px; }
+  .arr-out .out-chip b { color: var(--green); }
+
+  .pipe-flow { display: flex; align-items: stretch; gap: 0; flex-wrap: wrap; }
+  .pipe-step { flex: 1; min-width: 180px; background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 16px; position: relative; }
+  .pipe-step .step-num { position: absolute; top: -12px; left: 14px; background: var(--accent); color: #062a33; font-weight: 800; font-size: 12px; border-radius: 999px; padding: 2px 10px; font-family: ui-monospace, monospace; }
+  .pipe-step h4 { margin: 4px 0 6px; font-size: 16px; }
+  .pipe-arrow { display: flex; align-items: center; justify-content: center; color: var(--accent); font-size: 22px; padding: 0 6px; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; align-items: start; }
+  @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+
+  footer { border-top: 1px solid var(--border); padding: 30px 0; margin-top: 40px; color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="#top">Low-Power<span>ML</span> Accelerator</a>
+    <a class="navlink" href="#overview">Overview</a>
+    <a class="navlink" href="#architecture">Architecture</a>
+    <a class="navlink" href="#array">The Array</a>
+    <a class="navlink" href="#pipeline">Pipeline</a>
+    <a class="navlink" href="#lowpower">Low Power</a>
+    <a class="navlink" href="#modes">INT8 vs FP16</a>
+    <a class="navlink" href="#structure">Structure</a>
+    <a class="navlink" href="#run">Run</a>
+    <span class="spacer"></span>
+    <a href="#array">Visualizer →</a>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <div class="badges">
+      <span class="badge"><i>●</i> SystemVerilog</span>
+      <span class="badge"><i>●</i> INT8 / FP16</span>
+      <span class="badge"><i>●</i> N×N Systolic Array</span>
+      <span class="badge"><i>●</i> UPF Power Intent</span>
+    </div>
+    <h1>Low-Power <span class="grad">ML Accelerator</span></h1>
+    <p class="sub">A parameterizable N×N systolic array matrix multiplication unit written in SystemVerilog, designed for on-device ML inference. Combines INT8 / FP16 quantization, clock-gated zero-skipping, ping-pong SRAM buffering and ReLU/Tanh activations — verified against a NumPy golden model.</p>
+    <div class="cta">
+      <a class="btn primary" href="#array">⚡ Launch Interactive Array Visualizer</a>
+      <a class="btn ghost" href="#architecture">Architecture Overview</a>
+    </div>
+    <div class="stats">
+      <div class="stat">Array<b>4×4</b><br>scalable to 8×8</div>
+      <div class="stat">Datapath<b>INT8 / FP16</b></div>
+      <div class="stat">Accumulator<b>32-bit</b></div>
+      <div class="stat">MAC<b>3-stage</b></div>
+      <div class="stat">Clock Gate<b>Latch-based</b></div>
+      <div class="stat">Activation<b>ReLU / Tanh</b></div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- ================= OVERVIEW ================= -->
+  <section id="overview">
+    <div class="wrap">
+      <div class="kicker">01 · Overview</div>
+      <h2>What is a Systolic Array?</h2>
+      <p class="lead">Imagine a grid of tiny calculators (Processing Elements, or PEs) arranged in rows and columns. Each calculator holds one weight and performs one multiply-accumulate per cycle.</p>
+      <div class="grid-2">
+        <div class="panel">
+          <h3>The systolic dataflow</h3>
+          <p>Weights stay in place (stationary). Input activations stream through the array, and partial sums accumulate — like an assembly line where every PE is busy every cycle.</p>
+          <svg viewBox="0 0 480 150" style="min-width:0; width:100%;">
+            <defs><marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#22d3ee"/></marker></defs>
+            <line x1="20" y1="60" x2="60" y2="60" stroke="#22d3ee" stroke-width="2" marker-end="url(#arr)"/>
+            <text x="30" y="48" fill="#8ea0bf" font-size="11" font-family="monospace">A[0]</text>
+            <line x1="60" y1="60" x2="100" y2="60" stroke="#22d3ee" stroke-width="2" marker-end="url(#arr)"/>
+            <text x="70" y="48" fill="#8ea0bf" font-size="11" font-family="monospace">A[1]</text>
+            <line x1="100" y1="60" x2="140" y2="60" stroke="#22d3ee" stroke-width="2" marker-end="url(#arr)"/>
+            <text x="110" y="48" fill="#8ea0bf" font-size="11" font-family="monospace">A[2]</text>
+            <line x1="140" y1="60" x2="180" y2="60" stroke="#22d3ee" stroke-width="2" marker-end="url(#arr)"/>
+            <text x="150" y="48" fill="#8ea0bf" font-size="11" font-family="monospace">A[3]</text>
+            <rect x="60" y="70" width="26" height="26" rx="6" fill="#132238" stroke="#2b3f63"/>
+            <rect x="100" y="70" width="26" height="26" rx="6" fill="#132238" stroke="#2b3f63"/>
+            <rect x="140" y="70" width="26" height="26" rx="6" fill="#132238" stroke="#2b3f63"/>
+            <rect x="180" y="70" width="26" height="26" rx="6" fill="#132238" stroke="#2b3f63"/>
+            <text x="173" y="112" fill="#34d399" font-size="11" font-family="monospace">psum →</text>
+            <line x1="196" y1="83" x2="240" y2="83" stroke="#34d399" stroke-width="2" marker-end="url(#arr)"/>
+            <text x="218" y="74" fill="#34d399" font-size="11" font-family="monospace">Y</text>
+          </svg>
+        </div>
+        <div class="panel">
+          <h3>Why it is fast &amp; low power</h3>
+          <p>Every PE works in parallel on one multiply-accumulate per cycle. The 3-stage pipeline (multiply → add → accumulate+activate) allows a new input every cycle while results are still in flight.</p>
+          <p>Because neural activations are often sparse, a <b>zero-skipping</b> clock gate disables the clock when weight or activation is zero — saving dynamic power with no accuracy loss.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= ARCHITECTURE ================= -->
+  <section id="architecture">
+    <div class="wrap">
+      <div class="kicker">02 · Architecture</div>
+      <h2>System Architecture</h2>
+      <p class="lead">From host DMA down to the activated output stream — data passes through a ping-pong SRAM buffer, the systolic array, and an activation unit.</p>
+      <div class="arch">
+        <svg viewBox="0 0 1000 340" role="img" aria-label="Architecture diagram">
+          <defs>
+            <marker id="ah" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#22d3ee"/></marker>
+            <marker id="ah2" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#34d399"/></marker>
+          </defs>
+          <!-- host -->
+          <rect x="30" y="130" width="160" height="70" rx="12" fill="#0e1628" stroke="#2b3f63"/>
+          <text x="110" y="165" text-anchor="middle" fill="#e2e8f0" font-size="14" font-weight="700" font-family="sans-serif">HOST / DMA</text>
+          <text x="110" y="188" text-anchor="middle" fill="#8ea0bf" font-size="11" font-family="monospace">weights + activations</text>
+          <!-- sram A -->
+          <rect x="240" y="30" width="170" height="60" rx="12" fill="#0e1628" stroke="#2b3f63"/>
+          <text x="325" y="58" text-anchor="middle" fill="#e2e8f0" font-size="13" font-weight="700" font-family="sans-serif">SRAM BANK A</text>
+          <text x="325" y="76" text-anchor="middle" fill="#8ea0bf" font-size="11" font-family="monospace">256 entries</text>
+          <!-- sram B -->
+          <rect x="240" y="250" width="170" height="60" rx="12" fill="#0e1628" stroke="#2b3f63"/>
+          <text x="325" y="278" text-anchor="middle" fill="#e2e8f0" font-size="13" font-weight="700" font-family="sans-serif">SRAM BANK B</text>
+          <text x="325" y="296" text-anchor="middle" fill="#8ea0bf" font-size="11" font-family="monospace">256 entries</text>
+          <!-- swap -->
+          <path d="M240,100 C185,170 185,170 240,240" fill="none" stroke="#fbbf24" stroke-width="2" stroke-dasharray="6,4"/>
+          <text x="150" y="170" fill="#fbbf24" font-size="11" font-family="monospace">SWAP</text>
+          <!-- host -> sram A -->
+          <path d="M190,130 L232,92" fill="none" stroke="#22d3ee" stroke-width="2" marker-end="url(#ah)"/>
+          <!-- sram B -> array -->
+          <path d="M410,250 L470,140" fill="none" stroke="#34d399" stroke-width="2" marker-end="url(#ah2)"/>
+          <!-- array -->
+          <rect x="470" y="40" width="200" height="100" rx="12" fill="#132238" stroke="#2b3f63"/>
+          <text x="570" y="82" text-anchor="middle" fill="#e2e8f0" font-size="15" font-weight="700" font-family="sans-serif">SYSTOLIC ARRAY</text>
+          <text x="570" y="104" text-anchor="middle" fill="#22d3ee" font-size="12" font-family="monospace">N × N PE grid</text>
+          <text x="570" y="122" text-anchor="middle" fill="#8ea0bf" font-size="11" font-family="monospace">weight-stationary</text>
+          <!-- array -> act -->
+          <path d="M670,90 L726,65" fill="none" stroke="#22d3ee" stroke-width="2" marker-end="url(#ah)"/>
+          <!-- activation -->
+          <rect x="730" y="30" width="150" height="50" rx="12" fill="#132238" stroke="#2b3f63"/>
+          <text x="805" y="58" text-anchor="middle" fill="#e2e8f0" font-size="13" font-weight="700" font-family="sans-serif">ACTIVATION</text>
+          <text x="805" y="74" text-anchor="middle" fill="#8ea0bf" font-size="11" font-family="monospace">ReLU / Tanh / Linear</text>
+          <!-- activation -> output -->
+          <path d="M805,80 L805,92" fill="none" stroke="#34d399" stroke-width="2" marker-end="url(#ah2)"/>
+          <rect x="730" y="90" width="150" height="50" rx="12" fill="#0e1628" stroke="#2b3f63"/>
+          <text x="805" y="118" text-anchor="middle" fill="#e2e8f0" font-size="13" font-weight="700" font-family="sans-serif">OUTPUT</text>
+          <text x="805" y="134" text-anchor="middle" fill="#8ea0bf" font-size="11" font-family="monospace">psum / result stream</text>
+          <!-- labels -->
+          <text x="325" y="18" text-anchor="middle" fill="#8ea0bf" font-size="11" font-family="monospace">PING-PONG SRAM</text>
+        </svg>
+      </div>
+      <div class="grid-2" style="margin-top: 20px;">
+        <div class="panel"><h3>Ping-pong buffering</h3><p>Two SRAM banks alternate roles: while Bank A is written by the host, Bank B is read by the array. On a <code>swap</code> signal the roles flip, hiding memory latency.</p></div>
+        <div class="panel"><h3>Per-PE responsibilities</h3><p>Each PE holds a weight register, an activation register, a 3-stage pipelined MAC, a clock gate, and an activation function unit (ReLU, quantized Tanh, or linear).</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= INTERACTIVE ARRAY ================= -->
+  <section id="array">
+    <div class="wrap">
+      <div class="kicker">03 · Interactive</div>
+      <h2>The N×N Array — Live Visualizer</h2>
+      <p class="lead">This page embeds a small <b>JavaScript re-implementation</b> of the systolic array timing. Press play and watch a matrix multiply unfold: tokens flow, multipliers hit, partial sums accumulate, and the final activated results emerge.</p>
+      <div class="array-stage">
+        <div class="array-toolbar">
+          <div class="ctl-group">
+            <label>Array size</label>
+            <div class="btns">
+              <button class="active" data-n="4">4×4</button>
+              <button data-n="8">8×8</button>
+            </div>
+          </div>
+          <div class="ctl-group">
+            <label>Activation</label>
+            <div class="btns">
+              <button class="active" data-act="relu">ReLU</button>
+              <button data-act="tanh">Tanh</button>
+              <button data-act="linear">Linear</button>
+            </div>
+          </div>
+          <div class="ctl-group">
+            <label>Zero-skip clock gate</label>
+            <button id="zeroToggle" class="active" data-zero="1">ON</button>
+          </div>
+          <div class="ctl-group">
+            <label>Control</label>
+            <div class="btns">
+              <button id="btnReset" class="big">Reset</button>
+              <button id="btnStep" class="big">Step</button>
+              <button id="btnPlay" class="big">▶ Play</button>
+            </div>
+          </div>
+        </div>
+        <div class="array-meta">
+          <div>Cycle: <b id="cycleVal">0</b> / <b id="nVal">4</b></div>
+          <div>Computing column: <b id="psumCol">0</b></div>
+          <div>psum accumulator: <b id="psumVal">0</b></div>
+          <div>Status: <b id="statusVal">IDLE</b></div>
+        </div>
+        <div class="array-wrap">
+          <div id="grid" class="n4"></div>
+        </div>
+        <div class="array-side">
+          <h3 style="margin-bottom:4px;">Weights — stationary per column</h3>
+          <table id="wTable"><thead></thead><tbody></tbody></table>
+          <h3 style="margin:14px 0 4px;">Activations — tokens A[k]</h3>
+          <div class="arr-out" id="aOut"></div>
+          <h3 style="margin:14px 0 4px;">Results — Y = act(W × A)</h3>
+          <div class="arr-out" id="resultOut"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= PIPELINE ================= -->
+  <section id="pipeline">
+    <div class="wrap">
+      <div class="kicker">04 · Datapath</div>
+      <h2>The Per-PE Pipeline</h2>
+      <p class="lead">One PE runs a 3-stage multiply-accumulate pipeline: multiply, add, accumulate + activate.</p>
+      <div class="panel">
+        <div class="pipe-flow">
+          <div class="pipe-step">
+            <span class="step-num">STAGE 1</span>
+            <h4>Multiply</h4>
+            <p>product = weight × activation (INT8 <code>*</code> or FP16 multiplier)</p>
+          </div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-step">
+            <span class="step-num">STAGE 2</span>
+            <h4>Add</h4>
+            <p>sum = product + partial_sum_from_above</p>
+          </div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-step">
+            <span class="step-num">STAGE 3</span>
+            <h4>Accumulate + Activate</h4>
+            <p>accum = sum → activation (ReLU / Tanh / Linear)</p>
+          </div>
+        </div>
+        <p style="margin-top:18px;"><b>Zero-skip:</b> if weight or activation is 0, the clock gate turns off the multiplier clock — the PE skips the multiply but keeps the dataflow.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= LOW POWER ================= -->
+  <section id="lowpower">
+    <div class="wrap">
+      <div class="kicker">05 · Low Power</div>
+      <h2>Low-Power Features</h2>
+      <p class="lead">Dynamic power is the dominant cost in edge accelerators; this design attacks it at three levels.</p>
+      <div class="two-col">
+        <div class="panel">
+          <h3>Zero-skipping (clock gating)</h3>
+          <p>Each PE checks: <i>is my weight or activation zero?</i> If yes, the clock to the multiplier/adder stages is gated off.</p>
+          <pre><code>weight=0 or activation=0 → clk_en=0 → gclk=0 → MAC stages don't toggle</code></pre>
+        </div>
+        <div class="panel">
+          <h3>Latch-based clock gate</h3>
+          <p>Uses a latch-based <code>clock_gate</code> cell (not an AND gate) to prevent clock glitches — the standard approach in real ASICs.</p>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:20px;">
+        <h3>UPF power domains</h3>
+        <table>
+          <thead><tr><th>Domain</th><th>Contents</th><th>Voltage Rail</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><code>PD_COMPUTE</code></td><td>PE grid</td><td><code>VDD_COMPUTE</code></td><td>Can be voltage-scaled</td></tr>
+            <tr><td><code>PD_MEMORY</code></td><td>SRAM buffers</td><td><code>VDD_MEM</code></td><td>Higher voltage for stability</td></tr>
+            <tr><td><code>PD_CTRL</code></td><td>Control logic</td><td><code>VDD_CTRL</code></td><td>Always on</td></tr>
+          </tbody>
+        </table>
+        <p class="muted" style="margin-top:10px;">Level shifters between compute/memory domains, retention registers for PE accumulators, and a power switch to gate <code>VDD_COMPUTE</code> during idle periods.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= MODES ================= -->
+  <section id="modes">
+    <div class="wrap">
+      <div class="kicker">06 · Datapath Modes</div>
+      <h2>INT8 vs FP16</h2>
+      <p class="lead">The same systolic array supports two quantization modes via the <code>USE_FP16</code> parameter.</p>
+      <div class="panel">
+        <table>
+          <thead><tr><th>Aspect</th><th>INT8 Mode</th><th>FP16 Mode</th></tr></thead>
+          <tbody>
+            <tr><td>Data width</td><td>8 bits</td><td>16 bits</td></tr>
+            <tr><td>Quantization</td><td>Integer</td><td>IEEE 754 half-float</td></tr>
+            <tr><td>Multiplier</td><td><code>$signed(w) * $signed(a)</code> → INT16</td><td><code>fp16_mult</code> → INT32</td></tr>
+            <tr><td>Accumulator</td><td>INT32</td><td>INT32 (product rounded to int)</td></tr>
+            <tr><td>Range</td><td>-128..127 per input</td><td>~±65,504 per input</td></tr>
+            <tr><td>Use case</td><td>Quantized models (TFLite)</td><td>Higher precision needed</td></tr>
+          </tbody>
+        </table>
+        <h3 style="margin-top:18px;">FP16 format</h3>
+        <pre><code>1 bit sign | 5 bits exponent | 10 bits mantissa
+    15        14:10             9:0
+
+Value = (-1)^sign × 2^(exp-15) × 1.mantissa
+
+1.0 in FP16 = 0x3C00</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= VERIFY ================= -->
+  <section id="verify">
+    <div class="wrap">
+      <div class="kicker">07 · Verification</div>
+      <h2>Co-Simulation Strategy</h2>
+      <p class="lead">A Python golden model generates expected vectors; the RTL testbench drives the array and compares.</p>
+      <div class="panel">
+        <pre><code>Python NumPy Model                SV / C++ Testbench
+        │                                │
+        │  Generate random W, A        │
+        ├──────────────────────────────►│
+        │  Compute Y = f(W × A)        │
+        │                                │
+        │  Write expected Y to hex    │
+        ├──────────────────────────────►│
+        │                                │  Drive W, A into DUT
+        │                                │  Read Y from DUT
+        │                                │  Compare Y vs expected
+        │                                │  Report pass/fail</code></pre>
+        <p class="muted">Test cases: random INT8 + ReLU, random INT8 + Tanh, all-zero inputs (zero-skip), throughput check.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= STRUCTURE ================= -->
+  <section id="structure">
+    <div class="wrap">
+      <div class="kicker">08 · Repository</div>
+      <h2>Project Structure</h2>
+      <div class="panel">
+        <pre><code>low-power-ml-accelerator/
+├── index.html               # Interactive visualiser (this page)
+├── model/                    # Python golden reference
+│   ├── golden_model.py
+│   └── gen_vectors.py
+├── rtl/                      # SystemVerilog sources
+│   ├── params_pkg.sv
+│   ├── clock_gate.sv
+│   ├── fp16_mult.sv
+│   ├── activation.sv
+│   ├── pe.sv
+│   ├── memory_interface.sv
+│   └── systolic_array.sv
+├── tb/                       # Testbenches + vectors
+├── upf/                      # Unified Power Format
+├── scripts/                  # CAD tool scripts
+├── Makefile
+└── README.md</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= RUN ================= -->
+  <section id="run">
+    <div class="wrap">
+      <div class="kicker">09 · Getting Started</div>
+      <h2>How to Run</h2>
+      <div class="grid-2">
+        <div class="panel">
+          <h3>Python golden model</h3>
+          <pre><code>make model</code></pre>
+        </div>
+        <div class="panel">
+          <h3>Generate test vectors</h3>
+          <pre><code>make vectors</code></pre>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:16px;">
+        <h3>Verilator simulation (free / open-source)</h3>
+        <pre><code>make sim_vlt</code></pre>
+      </div>
+      <div class="panel" style="margin-top:16px;">
+        <h3>Questa / ModelSim</h3>
+        <pre><code>make sim</code></pre>
+      </div>
+      <div class="panel" style="margin-top:16px;">
+        <h3>Vivado synthesis (optional)</h3>
+        <pre><code>make synth</code></pre>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>Low-Power ML Accelerator — Systolic Array for Edge AI. RTL: SystemVerilog · Golden model: Python/NumPy · Simulator: Verilator / Questa · Power intent: UPF.</p>
+  </div>
+</footer>
+
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+  let N = 4;
+  let actMode = 'relu';
+  let zeroSkip = true;
+  let cycle = 0;
+  let running = false;
+  let timerId = null;
+  let W = [];
+  let A = [];
+  let accum = [];
+  let results = [];
+  let cells = [];
+
+  function mulberry32(a){ return function(){ a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+
+  function buildWeights(n){
+    const rnd = mulberry32(20240611);
+    const w = [];
+    for (let i = 0; i < n; i++){ w[i] = []; for (let j = 0; j < n; j++) w[i].push(Math.floor((rnd() * 200) - 100)); }
+    if (n > 0) w[0][0] = 0;
+    return w;
+  }
+  function buildActs(n){
+    const rnd = mulberry32(987654321);
+    const a = [];
+    for (let i = 0; i < n; i++) a.push(Math.floor((rnd() * 200) - 100));
+    if (n > 0) a[0] = 0;
+    return a;
+  }
+  function actFun(x, mode){
+    if (mode === 'relu') return Math.max(0, x);
+    if (mode === 'tanh') return x >= 2 ? 1 : (x <= -2 ? -1 : x / 2);
+    return x;
+  }
+
+  function stopRun(){ running = false; clearInterval(timerId); }
+  function startRun(){
+    if (running) return;
+    running = true;
+    $('btnPlay').textContent = '⏸ Pause';
+    timerId = setInterval(() => stepOnce(), 650);
+  }
+  function toggleRun(){
+    if (running) { stopRun(); $('btnPlay').textContent = '▶ Play'; }
+    else { if (cycle >= N) resetAll(); startRun(); }
+  }
+  function stepOnce(){
+    if (cycle >= N){ computeResults(); renderAll(); stopRun(); $('btnPlay').textContent = '▶ Play'; return; }
+    const c = cycle;
+    let skipped = 0;
+    for (let k = 0; k < N; k++){
+      const w = W[k][c], a = A[k];
+      const gated = zeroSkip && (w === 0 || a === 0);
+      if (!gated) accum[c] += a * w; else skipped++;
+    }
+    cycle++;
+    renderAll();
+    if (cycle >= N){ computeResults(); renderAll(); stopRun(); $('btnPlay').textContent = '▶ Play'; }
+  }
+  function computeResults(){
+    results = [];
+    for (let c = 0; c < N; c++) results.push(actFun(accum[c], actMode));
+  }
+
+  function resetAll(){
+    W = buildWeights(N); A = buildActs(N);
+    accum = new Array(N).fill(0);
+    cycle = 0; results = [];
+    stopRun();
+    $('btnPlay').textContent = '▶ Play';
+    renderAll();
+  }
+
+  function renderAll(){
+    $('cycleVal').textContent = cycle;
+    $('nVal').textContent = N;
+    $('statusVal').textContent = running ? 'RUNNING' : (cycle >= N ? 'DONE' : 'IDLE');
+    const c = cycle;
+    for (let r = 0; r < N; r++){
+      for (let cc = 0; cc < N; cc++){
+        const cell = cells[r * N + cc];
+        let cls = 'pe';
+        const gated = zeroSkip && (W[r][cc] === 0 || A[r] === 0);
+        if (cc === c) cls += ' hit';
+        if (gated) cls += ' gated';
+        if (cc === c) cls += ' tok';
+        cell.className = cls;
+        let inner;
+        if (cc === c){
+          inner = '<div class="w-row"><span class="w-val">w=' + W[r][cc] + '</span>';
+          if (gated) inner += '<span class="gate-tag">clk off / skip</span>';
+          inner += '</div>';
+          inner += '<div class="tok-row"><span class="tok-val">' + A[r] + '</span><span class="tok-label">A[' + r + ']</span></div>';
+          if (!gated) inner += '<div class="prod">prod=' + (A[r] * W[r][cc]) + '</div>';
+        } else {
+          inner = '<div class="w-row"><span class="w-val">w=' + W[r][cc] + '</span></div>';
+        }
+        cell.innerHTML = inner;
+      }
+    }
+    // psum display
+    if (c < N){
+      $('psumCol').textContent = c;
+      $('psumVal').textContent = accum[c];
+    } else {
+      $('psumCol').textContent = '—';
+      $('psumVal').textContent = '—';
+    }
+    // results
+    const outEl = $('resultOut');
+    outEl.innerHTML = '';
+    for (let c2 = 0; c2 < N; c2++){
+      const chip = document.createElement('div');
+      chip.className = 'out-chip';
+      const val = (results[c2] !== undefined) ? results[c2] : actFun(accum[c2], actMode);
+      chip.innerHTML = 'Y[' + c2 + '] = <b>' + val + '</b>';
+      outEl.appendChild(chip);
+    }
+    // acts
+    const aEl = $('aOut');
+    aEl.innerHTML = '';
+    for (let k = 0; k < N; k++){
+      const chip = document.createElement('div');
+      chip.className = 'out-chip';
+      chip.innerHTML = 'A[' + k + '] = <b>' + A[k] + '</b>';
+      aEl.appendChild(chip);
+    }
+    // weight table
+    const tEl = $('wTable');
+    tEl.querySelector('thead').innerHTML = '';
+    const trH = document.createElement('tr');
+    for (let c2 = 0; c2 < N; c2++){
+      const th = document.createElement('th');
+      th.textContent = 'W[' + c2 + ']';
+      trH.appendChild(th);
+    }
+    tEl.querySelector('thead').appendChild(trH);
+    tEl.querySelector('tbody').innerHTML = '';
+    for (let r = 0; r < N; r++){
+      const tr = document.createElement('tr');
+      for (let c2 = 0; c2 < N; c2++){
+        const td = document.createElement('td');
+        td.textContent = W[r][c2];
+        if (c2 === c) td.style.color = '#34d399';
+        tr.appendChild(td);
+      }
+      tEl.querySelector('tbody').appendChild(tr);
+    }
+  }
+
+  function rebuildGrid(){
+    const grid = $('grid');
+    grid.className = 'n' + N;
+    grid.innerHTML = '';
+    cells = [];
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++){
+      const d = document.createElement('div');
+      d.className = 'pe';
+      grid.appendChild(d);
+      cells.push(d);
+    }
+  }
+
+  function bindControls(){
+    $('btnPlay').addEventListener('click', toggleRun);
+    $('btnStep').addEventListener('click', () => { stopRun(); stepOnce(); });
+    $('btnReset').addEventListener('click', resetAll);
+    let zeroBtn = $('zeroToggle');
+    zeroBtn.addEventListener('click', () => {
+      zeroSkip = zeroBtn.classList.contains('active');
+      zeroBtn.classList.toggle('active', zeroSkip);
+      renderAll();
+    });
+    document.querySelectorAll('[data-n]').forEach(b => b.addEventListener('click', () => {
+      N = parseInt(b.getAttribute('data-n'), 10);
+      rebuildGrid();
+      resetAll();
+    }));
+    document.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => {
+      actMode = b.getAttribute('data-act');
+      document.querySelectorAll('[data-act]').forEach(x => x.classList.toggle('active', x === b));
+      renderAll();
+    }));
+  }
+
+  function init(){
+    bindControls();
+    rebuildGrid();
+    resetAll();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+</script>
+</body>
+</html>
